@@ -55,8 +55,6 @@ namespace XB1ControllerBatteryIndicator
                 CultureInfo.DefaultThreadCurrentCulture?.ClearCachedData();
                 CultureInfo.DefaultThreadCurrentUICulture?.ClearCachedData();
 
-                UpdateAvailableLanguages();
-
                 OnCurrentLanguageChanged();
             }
         }
