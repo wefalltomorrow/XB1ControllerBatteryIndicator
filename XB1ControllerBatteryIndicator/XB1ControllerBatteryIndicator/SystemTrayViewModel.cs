@@ -10,8 +10,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Media;
 using XB1ControllerBatteryIndicator.ShellHelpers;
-using MS.WindowsAPICodePack.Internal;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
 using XB1ControllerBatteryIndicator.Localization;
 using XB1ControllerBatteryIndicator.Properties;
 using System.Security.Principal;

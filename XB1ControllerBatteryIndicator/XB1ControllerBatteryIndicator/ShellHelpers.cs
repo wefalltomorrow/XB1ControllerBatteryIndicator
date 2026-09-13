@@ -1,11 +1,65 @@
 ﻿using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
-using MS.WindowsAPICodePack.Internal;
 
 namespace XB1ControllerBatteryIndicator.ShellHelpers
 {
+    //Minimal PROPERTYKEY/PROPVARIANT replacements for the two members this project used
+    //from Microsoft.WindowsAPICodePack.Shell.PropertySystem / MS.WindowsAPICodePack.Internal,
+    //which has had no update (or modern-.NET build) since ~2014.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PropertyKey
+    {
+        private readonly Guid _formatId;
+        private readonly int _propertyId;
+
+        public PropertyKey(Guid formatId, int propertyId)
+        {
+            _formatId = formatId;
+            _propertyId = propertyId;
+        }
+    }
+
+    internal static class SystemProperties
+    {
+        internal static class System
+        {
+            internal static class AppUserModel
+            {
+                //PKEY_AppUserModel_ID
+                internal static readonly PropertyKey ID = new PropertyKey(new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5);
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal sealed class PropVariant : IDisposable
+    {
+        [FieldOffset(0)] private ushort _varType;
+        [FieldOffset(8)] private IntPtr _pointerValue;
+
+        public PropVariant(string value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            _varType = (ushort)VarEnum.VT_LPWSTR;
+            _pointerValue = Marshal.StringToCoTaskMemUni(value);
+        }
+
+        ~PropVariant()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            PropVariantClear(this);
+            GC.SuppressFinalize(this);
+        }
+
+        [DllImport("ole32.dll")]
+        private static extern int PropVariantClear([In, Out] PropVariant pvar);
+    }
+
     internal enum STGM : long
     {
         STGM_READ = 0x00000000L,
