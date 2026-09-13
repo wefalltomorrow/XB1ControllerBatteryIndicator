@@ -2,7 +2,6 @@
 using System.Threading;
 using Windows.UI.Notifications;
 using Windows.Data.Xml.Dom;
-using System.Collections.Generic;
 using System;
 using System.Management;
 using System.Collections.ObjectModel;
@@ -30,7 +29,6 @@ namespace XB1ControllerBatteryIndicator
         private XboxController _controller;
         private string _tooltipText;
         private readonly bool[] _toastShown = new bool[5];
-        private readonly Dictionary<string, int> _numDict = new();
         private volatile string _themeSuffix = "";
 
         private SoundPlayer _soundPlayer;
@@ -43,10 +41,6 @@ namespace XB1ControllerBatteryIndicator
 
             RefreshThemeSuffix();
             ActiveIcon = $"Resources/battery_unknown{_themeSuffix}.ico";
-            _numDict["One"] = 1;
-            _numDict["Two"] = 2;
-            _numDict["Three"] = 3;
-            _numDict["Four"] = 4;
             TryCreateShortcut();
             var th = new Thread(RefreshControllerState)
             {
@@ -96,10 +90,10 @@ namespace XB1ControllerBatteryIndicator
                             //check if toast was already triggered and battery is no longer empty...
                             if (currentController.BatteryLevel != BatteryLevel.Empty)
                             {
-                                if (_toastShown[_numDict[$"{currentController.UserIndex}"]])
+                                if (_toastShown[(int)currentController.UserIndex + 1])
                                 {
                                     //...reset the notification
-                                    _toastShown[_numDict[$"{currentController.UserIndex}"]] = false;
+                                    _toastShown[(int)currentController.UserIndex + 1] = false;
                                     ToastNotificationManager.History.Remove($"Controller{currentController.UserIndex}", "ControllerToast", AppId);
                                 }
                             }
@@ -131,10 +125,10 @@ namespace XB1ControllerBatteryIndicator
                                     if (currentController.BatteryLevel == BatteryLevel.Empty)
                                     {
                                         //check if toast (notification) for current controller was already triggered
-                                        if (_toastShown[_numDict[$"{currentController.UserIndex}"]] == false)
+                                        if (_toastShown[(int)currentController.UserIndex + 1] == false)
                                         {
                                             //if not, trigger it
-                                            _toastShown[_numDict[$"{currentController.UserIndex}"]] = true;
+                                            _toastShown[(int)currentController.UserIndex + 1] = true;
                                             ShowToast(currentController.UserIndex);
                                         }
                                         //check if notification sound is enabled
@@ -216,7 +210,7 @@ namespace XB1ControllerBatteryIndicator
         //send a toast
         private void ShowToast(UserIndex controllerIndex)
         {
-            var controllerId = _numDict[$"{controllerIndex}"];
+            var controllerId = (int)controllerIndex + 1;
             var controllerIndexCaption = GetControllerIndexCaption(controllerIndex);
             var argsDismiss = $"dismissed";
             var argsLaunch = $"{controllerId}";
