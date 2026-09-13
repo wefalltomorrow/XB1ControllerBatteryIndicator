@@ -157,8 +157,8 @@ namespace XB1ControllerBatteryIndicator
                                     break;
                                 }
                             }
-                            Thread.Sleep(5000);
                         }
+                        Thread.Sleep(5000);
                     }
                     else
                     {
