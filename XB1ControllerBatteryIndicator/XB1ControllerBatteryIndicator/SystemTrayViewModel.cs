@@ -31,6 +31,7 @@ namespace XB1ControllerBatteryIndicator
         private string _tooltipText;
         private readonly bool[] _toastShown = new bool[5];
         private readonly Dictionary<string, int> _numDict = new();
+        private volatile string _themeSuffix = "";
 
         private SoundPlayer _soundPlayer;
 
@@ -40,7 +41,8 @@ namespace XB1ControllerBatteryIndicator
             TranslationManager.CurrentLanguageChangedEvent += (_, _) => GetAvailableLanguages();
             UpdateNotificationSound();
 
-            ActiveIcon = $"Resources/battery_unknown{LightTheme()}.ico";
+            RefreshThemeSuffix();
+            ActiveIcon = $"Resources/battery_unknown{_themeSuffix}.ico";
             _numDict["One"] = 1;
             _numDict["Two"] = 2;
             _numDict["Three"] = 3;
@@ -107,24 +109,24 @@ namespace XB1ControllerBatteryIndicator
                                 //wired
                                 case BatteryType.Wired:
                                     TooltipText = string.Format(Strings.ToolTip_Wired, controllerIndexCaption);
-                                    ActiveIcon = $"Resources/battery_wired_{currentController.UserIndex.ToString().ToLower() + LightTheme()}.ico";
+                                    ActiveIcon = $"Resources/battery_wired_{currentController.UserIndex.ToString().ToLower() + _themeSuffix}.ico";
                                     break;
                                 //"disconnected", a controller that was detected but hasn't sent battery data yet has this state
                                 case BatteryType.Disconnected:
                                     TooltipText = string.Format(Strings.ToolTip_WaitingForData, controllerIndexCaption);
-                                    ActiveIcon = $"Resources/battery_disconnected_{currentController.UserIndex.ToString().ToLower() + LightTheme()}.ico";
+                                    ActiveIcon = $"Resources/battery_disconnected_{currentController.UserIndex.ToString().ToLower() + _themeSuffix}.ico";
                                     break;
                                 //this state should never happen
                                 case BatteryType.Unknown:
                                     TooltipText = string.Format(Strings.ToolTip_Unknown, controllerIndexCaption);
-                                    ActiveIcon = $"Resources/battery_disconnected_{currentController.UserIndex.ToString().ToLower() + LightTheme()}.ico";
+                                    ActiveIcon = $"Resources/battery_disconnected_{currentController.UserIndex.ToString().ToLower() + _themeSuffix}.ico";
                                     break;
                                 //a battery level was detected
                                 default:
                                 {
                                     var batteryLevelCaption = GetBatteryLevelCaption(currentController.BatteryLevel);
                                     TooltipText = string.Format(Strings.ToolTip_Wireless, controllerIndexCaption, batteryLevelCaption);
-                                    ActiveIcon = $"Resources/battery_{currentController.BatteryLevel.ToString().ToLower()}_{currentController.UserIndex.ToString().ToLower() + LightTheme()}.ico";
+                                    ActiveIcon = $"Resources/battery_{currentController.BatteryLevel.ToString().ToLower()}_{currentController.UserIndex.ToString().ToLower() + _themeSuffix}.ico";
                                     //when "empty" state is detected...
                                     if (currentController.BatteryLevel == BatteryLevel.Empty)
                                     {
@@ -163,7 +165,7 @@ namespace XB1ControllerBatteryIndicator
                     else
                     {
                         TooltipText = Strings.ToolTip_NoController;
-                        ActiveIcon = $"Resources/battery_unknown{LightTheme()}.ico";
+                        ActiveIcon = $"Resources/battery_unknown{_themeSuffix}.ico";
                     }
                     Thread.Sleep(1000);
                 }
@@ -329,8 +331,7 @@ namespace XB1ControllerBatteryIndicator
                 var watcher = new ManagementEventWatcher(query);
                 watcher.EventArrived += (_, _) =>
                 {
-                    LightTheme();
-                    
+                    RefreshThemeSuffix();
                 };
 
                 // Start listening for events
@@ -341,21 +342,24 @@ namespace XB1ControllerBatteryIndicator
                 // This can fail on Windows 7
             }
 
-            LightTheme();
+            RefreshThemeSuffix();
         }
 
-        private static string LightTheme()
+        //re-reads the theme registry value and caches the result, so callers on the
+        //polling thread don't hit the registry on every icon update
+        private void RefreshThemeSuffix()
         {
             using var key = Registry.CurrentUser.OpenSubKey(ThemeRegKeyPath);
             var registryValueObject = key?.GetValue(ThemeRegValueName);
             if (registryValueObject == null)
             {
-                return "";
+                _themeSuffix = "";
+                return;
             }
 
             var registryValue = (int)registryValueObject;
 
-            return registryValue > 0 ? "-black" : "";
+            _themeSuffix = registryValue > 0 ? "-black" : "";
         }
     }
 }
