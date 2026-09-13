@@ -169,7 +169,9 @@ namespace XB1ControllerBatteryIndicator
                 }
                 catch (Exception)
                 {
-                    // ignored
+                    // ignored, but still throttle the retry so a persistent failure
+                    // (e.g. XInput DLL missing) can't spin this loop at 100% CPU
+                    Thread.Sleep(1000);
                 }
             }
             // ReSharper disable once FunctionNeverReturns
