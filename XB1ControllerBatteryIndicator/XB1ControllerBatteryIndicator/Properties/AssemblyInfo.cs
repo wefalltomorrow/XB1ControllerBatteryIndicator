@@ -1,7 +1,13 @@
 ﻿using System.Reflection;
 using System.Resources;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Windows;
+
+//GenerateAssemblyInfo is disabled (this file is checked in and authoritative), which also
+//suppresses the SDK's automatic [SupportedOSPlatform] attribute for -windows TFMs - add it
+//back explicitly so the platform-compatibility analyzer knows this assembly is Windows-only.
+[assembly: SupportedOSPlatform("windows10.0.19041.0")]
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
