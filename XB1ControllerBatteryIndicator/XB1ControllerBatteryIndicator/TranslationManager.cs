@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -26,8 +26,8 @@ namespace XB1ControllerBatteryIndicator
             {
                 try
                 {
-                    var rs = resourceManager.GetResourceSet(culture, true, false);
-                    if (rs != null)
+                    var resourceSet = resourceManager.GetResourceSet(culture, true, false);
+                    if (resourceSet != null)
                         result.Add(culture);
                 }
                 catch (CultureNotFoundException)
@@ -52,11 +52,14 @@ namespace XB1ControllerBatteryIndicator
                 CultureInfo.DefaultThreadCurrentCulture = value;
                 CultureInfo.DefaultThreadCurrentUICulture = value;
 
-                CultureInfo.DefaultThreadCurrentCulture?.ClearCachedData();
-                CultureInfo.DefaultThreadCurrentUICulture?.ClearCachedData();
+                if (CultureInfo.DefaultThreadCurrentCulture != null)
+                    CultureInfo.DefaultThreadCurrentCulture.ClearCachedData();
 
-                UpdateAvailableLanguages();
+                if (CultureInfo.DefaultThreadCurrentUICulture != null)
+                    CultureInfo.DefaultThreadCurrentUICulture.ClearCachedData();
 
+                // The set of embedded translation resources cannot change at runtime,
+                // so do not rescan every installed culture on each language switch.
                 OnCurrentLanguageChanged();
             }
         }
@@ -71,8 +74,9 @@ namespace XB1ControllerBatteryIndicator
 
         private static void OnCurrentLanguageChanged()
         {
-            var @event = _currentLanguageChangedEvent;
-            @event?.Invoke(null, EventArgs.Empty);
+            var handler = _currentLanguageChangedEvent;
+            if (handler != null)
+                handler(null, EventArgs.Empty);
         }
     }
 }

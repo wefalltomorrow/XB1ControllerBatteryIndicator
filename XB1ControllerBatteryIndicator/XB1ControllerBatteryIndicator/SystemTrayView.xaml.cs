@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Net;
 using System.Windows.Data;
 using System.Xml;
 using XB1ControllerBatteryIndicator.Localization;
@@ -27,7 +28,7 @@ namespace XB1ControllerBatteryIndicator
         }
         RegistryKey autoStartKey = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
         private string appID = "XB1ControllerBatteryIndicator";
-        string xmlUrl = "http://xb1cbi.kienai.de/current_version.xml";
+        string xmlUrl = "https://raw.githubusercontent.com/wefalltomorrow/XB1ControllerBatteryIndicator/master/current_version.xml";
 
         //create autostart registry key
         private void StartWithWindows()
@@ -46,6 +47,7 @@ namespace XB1ControllerBatteryIndicator
             bool update_check = Properties.Settings.Default.UpdateCheck;
             if (update_check == true)
             {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
                 Version newVersion = null;
                 string update_url = "";
                 XmlTextReader reader;

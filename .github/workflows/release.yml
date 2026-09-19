@@ -1,0 +1,104 @@
+name: Publish release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version
+        shell: pwsh
+        run: |
+          [xml]$versionXml = Get-Content .\current_version.xml
+          $version = $versionXml.XB1ControllerBatteryIndicator.version
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TAG=v$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Check for existing release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$env:TAG" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "SKIP_RELEASE=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Release $env:TAG already exists; nothing to publish."
+          } else {
+            "SKIP_RELEASE=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Setup MSBuild
+        if: env.SKIP_RELEASE != 'true'
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Setup NuGet
+        if: env.SKIP_RELEASE != 'true'
+        uses: NuGet/setup-nuget@v2
+
+      - name: Restore packages
+        if: env.SKIP_RELEASE != 'true'
+        run: nuget restore .\XB1ControllerBatteryIndicator\XB1ControllerBatteryIndicator.sln
+
+      - name: Build Release
+        if: env.SKIP_RELEASE != 'true'
+        run: msbuild .\XB1ControllerBatteryIndicator\XB1ControllerBatteryIndicator.sln /m /p:Configuration=Release /p:Platform="Any CPU" /v:minimal
+
+      - name: Package release
+        if: env.SKIP_RELEASE != 'true'
+        shell: pwsh
+        run: |
+          $output = ".\XB1ControllerBatteryIndicator\XB1ControllerBatteryIndicator\bin\Release"
+          $release = ".\release"
+          $portable = Join-Path $release "portable"
+
+          New-Item -ItemType Directory -Force -Path $portable | Out-Null
+
+          Copy-Item (Join-Path $output "XB1ControllerBatteryIndicator.exe") (Join-Path $portable "XB1ControllerBatteryIndicator.exe")
+          if (Test-Path (Join-Path $output "XB1ControllerBatteryIndicator.exe.config")) {
+            Copy-Item (Join-Path $output "XB1ControllerBatteryIndicator.exe.config") (Join-Path $portable "XB1ControllerBatteryIndicator.exe.config")
+          }
+
+          Copy-Item (Join-Path $output "XB1ControllerBatteryIndicator.exe") (Join-Path $release "XB1ControllerBatteryIndicator-$env:VERSION.exe")
+
+          $zip = Join-Path $release "XB1ControllerBatteryIndicator-$env:VERSION-portable.zip"
+          Compress-Archive -Path (Join-Path $portable "*") -DestinationPath $zip -Force
+
+          $checksumFiles = @(
+            (Join-Path $release "XB1ControllerBatteryIndicator-$env:VERSION.exe"),
+            $zip
+          )
+
+          $lines = foreach ($file in $checksumFiles) {
+            $hash = Get-FileHash -Algorithm SHA256 $file
+            "$($hash.Hash.ToLowerInvariant())  $(Split-Path $file -Leaf)"
+          }
+          $lines | Set-Content -Encoding ascii (Join-Path $release "SHA256SUMS.txt")
+
+      - name: Create GitHub Release
+        if: env.SKIP_RELEASE != 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releaseArgs = @(
+            "release", "create", $env:TAG,
+            ".\release\XB1ControllerBatteryIndicator-$env:VERSION-portable.zip#Portable ZIP (recommended)",
+            ".\release\XB1ControllerBatteryIndicator-$env:VERSION.exe#Standalone executable",
+            ".\release\SHA256SUMS.txt#SHA-256 checksums",
+            "--repo", $env:GITHUB_REPOSITORY,
+            "--target", $env:GITHUB_SHA,
+            "--title", "XB1 Controller Battery Indicator $env:VERSION",
+            "--notes-file", ".\RELEASE_NOTES.md"
+          )
+          & gh @releaseArgs

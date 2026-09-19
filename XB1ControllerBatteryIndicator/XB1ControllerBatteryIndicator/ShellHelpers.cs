@@ -1,11 +1,65 @@
 ﻿using System;
 using System.Text;
 using System.Runtime.InteropServices;
-using Microsoft.WindowsAPICodePack.Shell.PropertySystem;
-using MS.WindowsAPICodePack.Internal;
 
 namespace XB1ControllerBatteryIndicator.ShellHelpers
 {
+    //Minimal PROPERTYKEY/PROPVARIANT replacements for the two members this project used
+    //from Microsoft.WindowsAPICodePack.Shell.PropertySystem / MS.WindowsAPICodePack.Internal,
+    //which has had no update (or modern-.NET build) since ~2014.
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct PropertyKey
+    {
+        private readonly Guid _formatId;
+        private readonly int _propertyId;
+
+        public PropertyKey(Guid formatId, int propertyId)
+        {
+            _formatId = formatId;
+            _propertyId = propertyId;
+        }
+    }
+
+    internal static class SystemProperties
+    {
+        internal static class System
+        {
+            internal static class AppUserModel
+            {
+                //PKEY_AppUserModel_ID
+                internal static readonly PropertyKey ID = new PropertyKey(new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), 5);
+            }
+        }
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal sealed class PropVariant : IDisposable
+    {
+        [FieldOffset(0)] private ushort _varType;
+        [FieldOffset(8)] private IntPtr _pointerValue;
+
+        public PropVariant(string value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+            _varType = (ushort)VarEnum.VT_LPWSTR;
+            _pointerValue = Marshal.StringToCoTaskMemUni(value);
+        }
+
+        ~PropVariant()
+        {
+            Dispose();
+        }
+
+        public void Dispose()
+        {
+            PropVariantClear(this);
+            GC.SuppressFinalize(this);
+        }
+
+        [DllImport("ole32.dll")]
+        private static extern int PropVariantClear([In, Out] PropVariant pvar);
+    }
+
     internal enum STGM : long
     {
         STGM_READ = 0x00000000L,
@@ -41,46 +95,46 @@ namespace XB1ControllerBatteryIndicator.ShellHelpers
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IShellLinkW
     {
-        UInt32 GetPath(
+        uint GetPath(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
             int cchMaxPath,
             //ref _WIN32_FIND_DATAW pfd,
             IntPtr pfd,
             uint fFlags);
-        UInt32 GetIDList(out IntPtr ppidl);
-        UInt32 SetIDList(IntPtr pidl);
-        UInt32 GetDescription(
+        uint GetIDList(out IntPtr ppidl);
+        uint SetIDList(IntPtr pidl);
+        uint GetDescription(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile,
             int cchMaxName);
-        UInt32 SetDescription(
+        uint SetDescription(
             [MarshalAs(UnmanagedType.LPWStr)] string pszName);
-        UInt32 GetWorkingDirectory(
+        uint GetWorkingDirectory(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszDir,
             int cchMaxPath
             );
-        UInt32 SetWorkingDirectory(
+        uint SetWorkingDirectory(
             [MarshalAs(UnmanagedType.LPWStr)] string pszDir);
-        UInt32 GetArguments(
+        uint GetArguments(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszArgs,
             int cchMaxPath);
-        UInt32 SetArguments(
+        uint SetArguments(
             [MarshalAs(UnmanagedType.LPWStr)] string pszArgs);
-        UInt32 GetHotKey(out short wHotKey);
-        UInt32 SetHotKey(short wHotKey);
-        UInt32 GetShowCmd(out uint iShowCmd);
-        UInt32 SetShowCmd(uint iShowCmd);
-        UInt32 GetIconLocation(
+        uint GetHotKey(out short wHotKey);
+        uint SetHotKey(short wHotKey);
+        uint GetShowCmd(out uint iShowCmd);
+        uint SetShowCmd(uint iShowCmd);
+        uint GetIconLocation(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] out StringBuilder pszIconPath,
             int cchIconPath,
             out int iIcon);
-        UInt32 SetIconLocation(
+        uint SetIconLocation(
             [MarshalAs(UnmanagedType.LPWStr)] string pszIconPath,
             int iIcon);
-        UInt32 SetRelativePath(
+        uint SetRelativePath(
             [MarshalAs(UnmanagedType.LPWStr)] string pszPathRel,
             uint dwReserved);
-        UInt32 Resolve(IntPtr hwnd, uint fFlags);
-        UInt32 SetPath(
+        uint Resolve(IntPtr hwnd, uint fFlags);
+        uint SetPath(
             [MarshalAs(UnmanagedType.LPWStr)] string pszFile);
     }
 
@@ -89,29 +143,29 @@ namespace XB1ControllerBatteryIndicator.ShellHelpers
     InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IPersistFile
     {
-        UInt32 GetCurFile(
+        uint GetCurFile(
             [Out(), MarshalAs(UnmanagedType.LPWStr)] StringBuilder pszFile
         );
-        UInt32 IsDirty();
-        UInt32 Load(
+        uint IsDirty();
+        uint Load(
             [MarshalAs(UnmanagedType.LPWStr)] string pszFileName,
             [MarshalAs(UnmanagedType.U4)] STGM dwMode);
-        UInt32 Save(
+        uint Save(
             [MarshalAs(UnmanagedType.LPWStr)] string pszFileName,
             bool fRemember);
-        UInt32 SaveCompleted(
+        uint SaveCompleted(
             [MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
     }
     [ComImport]
     [Guid(ShellIIDGuid.IPropertyStore)]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    interface IPropertyStore
+    internal interface IPropertyStore
     {
-        UInt32 GetCount([Out] out uint propertyCount);
-        UInt32 GetAt([In] uint propertyIndex, out PropertyKey key);
-        UInt32 GetValue([In] ref PropertyKey key, [Out] PropVariant pv);
-        UInt32 SetValue([In] ref PropertyKey key, [In] PropVariant pv);
-        UInt32 Commit();
+        uint GetCount([Out] out uint propertyCount);
+        uint GetAt([In] uint propertyIndex, out PropertyKey key);
+        uint GetValue([In] ref PropertyKey key, [Out] PropVariant pv);
+        uint SetValue([In] ref PropertyKey key, [In] PropVariant pv);
+        uint Commit();
     }
 
 
@@ -122,7 +176,7 @@ namespace XB1ControllerBatteryIndicator.ShellHelpers
 
     public static class ErrorHelper
     {
-        public static void VerifySucceeded(UInt32 hresult)
+        public static void VerifySucceeded(uint hresult)
         {
             if (hresult > 1)
             {
