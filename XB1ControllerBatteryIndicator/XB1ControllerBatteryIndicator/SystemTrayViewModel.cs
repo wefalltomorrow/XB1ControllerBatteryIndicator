@@ -31,15 +31,12 @@ namespace XB1ControllerBatteryIndicator
         private readonly bool[] _lowBatterySoundPlayed = new bool[ControllerCount];
         private readonly DateTime[] _nextLoopSoundUtc = new DateTime[ControllerCount];
         private volatile string _themeSuffix = string.Empty;
-        private SoundPlayer _soundPlayer;
         private ManagementEventWatcher _themeWatcher;
 
         public SystemTrayViewModel()
         {
             GetAvailableLanguages();
             TranslationManager.CurrentLanguageChangedEvent += (sender, args) => GetAvailableLanguages();
-            UpdateNotificationSound();
-
             RefreshThemeSuffix();
             ActiveIcon = "Resources/battery_unknown" + _themeSuffix + ".ico";
 
@@ -225,8 +222,8 @@ namespace XB1ControllerBatteryIndicator
         {
             try
             {
-                if (_soundPlayer != null)
-                    _soundPlayer.Play();
+                // Follow the user's configured Windows "Exclamation" system sound.
+                SystemSounds.Exclamation.Play();
             }
             catch (Exception ex)
             {
@@ -421,13 +418,6 @@ namespace XB1ControllerBatteryIndicator
 
             foreach (var language in TranslationManager.AvailableLanguages)
                 AvailableLanguages.Add(language);
-        }
-
-        public void UpdateNotificationSound()
-        {
-            _soundPlayer = File.Exists(Settings.Default.wavFile)
-                ? new SoundPlayer(Settings.Default.wavFile)
-                : null;
         }
 
         public void WatchTheme()

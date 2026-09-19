@@ -32,7 +32,7 @@ No .NET 10 runtime is required.
 - Empty, low, medium and full battery states
 - Wired and waiting-for-data states
 - Low-battery Windows toast notifications
-- Optional low-battery warning sound and looping warning sound
+- Optional built-in Windows low-battery warning sound and looping warning sound
 - Automatic light/dark tray icon handling
 - Optional startup with Windows
 - Built-in update checking against this fork
@@ -41,7 +41,7 @@ XInput exposes coarse battery levels rather than a precise percentage, so this a
 
 ## What's improved in this fork
 
-Version 1.3.2.0 consolidates the useful maintenance work from newer forks while preserving the original behaviour:
+Version 1.3.2.1 consolidates the useful maintenance work from newer forks while preserving the original behaviour:
 
 - Removed the abandoned SharpDX and SharpDX.XInput dependencies
 - Calls Windows `xinput1_4.dll` directly through P/Invoke
@@ -50,6 +50,7 @@ Version 1.3.2.0 consolidates the useful maintenance work from newer forks while 
 - Preserves the connected-but-waiting-for-battery-data state
 - Prevents false low-battery alerts for wired or still-initializing controllers
 - Tracks low-battery sound state independently for each controller
+- Uses the Windows Exclamation system sound for battery warnings instead of requiring a custom WAV file
 - Caches the Windows theme value instead of reading the registry on every icon refresh
 - Keeps the theme watcher alive for reliable theme changes
 - Removes redundant translation-resource rescans

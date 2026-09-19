@@ -142,35 +142,8 @@ namespace XB1ControllerBatteryIndicator
         {
             Debug.WriteLine("LowBatteryWarningSound_Enabled_Click");
 
-            bool lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Enabled;
-            if (lowBatteryWarningSoundEnabled == false)
-            {
-                var openWav = new OpenFileDialog
-                {
-                    DefaultExt = ".wav",
-                    Filter = "WAV audio (*.wav)|*.wav",
-                    InitialDirectory = "C:\\Windows\\media\\"
-                };
-                var wavResult = openWav.ShowDialog(Application.Current.MainWindow);
-                if (wavResult.GetValueOrDefault())
-                {
-                    Debug.WriteLine(openWav.FileName);
-                    Properties.Settings.Default.wavFile = openWav.FileName;
-                    Properties.Settings.Default.LowBatteryWarningSound_Enabled = true;
-                }
-                else
-                {
-                    Properties.Settings.Default.wavFile = string.Empty;
-                    Properties.Settings.Default.LowBatteryWarningSound_Enabled = false;
-                }
-            }
-            else
-            {
-                Properties.Settings.Default.wavFile = string.Empty;
-                Properties.Settings.Default.LowBatteryWarningSound_Enabled = false;
-            }
+            // IsChecked is already two-way bound to the setting; just persist it.
             Properties.Settings.Default.Save();
-            ViewModel.UpdateNotificationSound();
         }
         //lowBatteryWarningSound_Loop_Enabled-checkbox was clicked
         private void LowBatteryWarningSound_Loop_Enabled_Click(object sender, RoutedEventArgs e)

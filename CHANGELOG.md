@@ -2,6 +2,20 @@
 
 All notable changes to this maintained fork are documented here.
 
+## [1.3.2.1] - 2026-09-20
+
+### Changed
+
+- Low-battery warning audio now uses the built-in Windows Exclamation system sound
+- Enabling the warning no longer opens a WAV file picker
+- The selected Windows sound scheme is respected automatically
+- Existing "Repeat on loop" behaviour is unchanged
+
+### Removed
+
+- Custom WAV file selection
+- The obsolete `wavFile` user setting and SoundPlayer state
+
 ## [1.3.2.0] - 2026-09-20
 
 ### Added
