@@ -37,6 +37,7 @@ jobs:
           } else {
             "SKIP_RELEASE=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           }
+          exit 0
 
       - name: Setup MSBuild
         if: env.SKIP_RELEASE != 'true'
@@ -102,3 +103,14 @@ jobs:
             "--notes-file", ".\RELEASE_NOTES.md"
           )
           & gh @releaseArgs
+
+      - name: Delete merged maintenance branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method DELETE "repos/$env:GITHUB_REPOSITORY/git/refs/heads/best-of-forks" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "Maintenance branch was already absent or could not be deleted."
+          }
+          exit 0
