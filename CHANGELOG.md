@@ -2,6 +2,21 @@
 
 All notable changes to this maintained fork are documented here.
 
+## [1.3.2.2] - 2026-09-20
+
+### Changed
+
+- Reduced XInput polling from every 1 second to every 5 seconds
+- Wireless battery tooltips now show approximate percentage ranges instead of Empty / Low / Medium / Full
+- XInput Empty is shown as 0–10%
+- XInput Low is shown as 10–40%
+- XInput Medium is shown as 40–70%
+- XInput Full is shown as 70–100%
+
+### Notes
+
+- These are ranges, not exact percentages; XInput only exposes four coarse battery states
+
 ## [1.3.2.1] - 2026-09-20
 
 ### Changed

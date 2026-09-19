@@ -1,20 +1,21 @@
-# XB1 Controller Battery Indicator 1.3.2.1
+# XB1 Controller Battery Indicator 1.3.2.2
 
-A small follow-up release that simplifies the low-battery warning sound.
+This release reduces background polling and makes the battery display more useful without pretending XInput provides an exact percentage.
 
 ## Changes
 
-- The low-battery warning now uses Windows' built-in **Exclamation** system sound
-- Enabling the warning no longer opens a custom WAV file picker
-- The sound follows the user's configured Windows sound scheme
-- **Repeat on loop** continues to replay the warning every five seconds while the battery remains empty
-- Removed the obsolete custom-WAV path, `wavFile` setting and SoundPlayer instance
+- Reduced controller polling from **every 1 second** to **every 5 seconds**
+- Wireless battery tooltips now show approximate percentage ranges:
+  - Empty → **0–10%**
+  - Low → **10–40%**
+  - Medium → **40–70%**
+  - Full → **70–100%**
+- Multi-controller tray rotation remains every five seconds
+- Low-battery notifications and warning sounds are otherwise unchanged
 
-This keeps the warning feature zero-config and avoids depending on a specific file under `C:\\Windows\\Media`.
+## Important note about percentages
 
-## Compatibility
-
-The controller and battery handling is otherwise unchanged from 1.3.2.0. Battery reporting over Bluetooth remains subject to Windows/XInput limitations.
+XInput does not provide an exact 0–100 battery percentage. It exposes four coarse battery states. The percentages shown by this release are the documented approximate charge ranges for those states, so the app does not invent false precision.
 
 ## Download choice
 
