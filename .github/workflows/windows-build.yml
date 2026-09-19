@@ -3,7 +3,7 @@ name: Windows build
 on:
   push:
     branches:
-      - best-of-forks
+      - master
   pull_request:
     branches:
       - master
@@ -23,6 +23,13 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v2
 
+      - name: Read version
+        shell: pwsh
+        run: |
+          [xml]$versionXml = Get-Content .\current_version.xml
+          $version = $versionXml.XB1ControllerBatteryIndicator.version
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Restore packages
         run: nuget restore .\XB1ControllerBatteryIndicator\XB1ControllerBatteryIndicator.sln
 
@@ -33,7 +40,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: XB1ControllerBatteryIndicator-1.3.2.0
+          name: XB1ControllerBatteryIndicator-${{ env.VERSION }}
           path: .\XB1ControllerBatteryIndicator\XB1ControllerBatteryIndicator\bin\Release\
           if-no-files-found: error
           retention-days: 30
