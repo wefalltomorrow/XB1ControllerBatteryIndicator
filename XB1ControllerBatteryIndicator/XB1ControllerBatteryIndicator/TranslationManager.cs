@@ -40,7 +40,7 @@ namespace XB1ControllerBatteryIndicator
 
         public static CultureInfo CurrentLanguage
         {
-            get { return CultureInfo.DefaultThreadCurrentUICulture; }
+            get => CultureInfo.DefaultThreadCurrentUICulture;
             set
             {
                 if (!AvailableLanguages.Contains(value))
@@ -55,8 +55,6 @@ namespace XB1ControllerBatteryIndicator
                 CultureInfo.DefaultThreadCurrentCulture?.ClearCachedData();
                 CultureInfo.DefaultThreadCurrentUICulture?.ClearCachedData();
 
-                UpdateAvailableLanguages();
-
                 OnCurrentLanguageChanged();
             }
         }
@@ -65,8 +63,8 @@ namespace XB1ControllerBatteryIndicator
 
         public static event EventHandler CurrentLanguageChangedEvent
         {
-            add { _currentLanguageChangedEvent += value; }
-            remove { _currentLanguageChangedEvent -= value; }
+            add => _currentLanguageChangedEvent += value;
+            remove => _currentLanguageChangedEvent -= value;
         }
 
         private static void OnCurrentLanguageChanged()

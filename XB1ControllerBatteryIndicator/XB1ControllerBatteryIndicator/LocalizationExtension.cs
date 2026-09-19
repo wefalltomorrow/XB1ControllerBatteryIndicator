@@ -6,8 +6,8 @@ namespace XB1ControllerBatteryIndicator
     {
         public LocalizationExtension(string name) : base("[" + name + "]")
         {
-            this.Mode = BindingMode.OneWay;
-            this.Source = TranslationBindingProvider.Instance;
+            Mode = BindingMode.OneWay;
+            Source = TranslationBindingProvider.Instance;
         }
     }
 }

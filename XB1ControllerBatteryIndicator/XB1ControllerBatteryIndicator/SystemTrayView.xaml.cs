@@ -32,7 +32,9 @@ namespace XB1ControllerBatteryIndicator
         //create autostart registry key
         private void StartWithWindows()
         {
-            String exePath = Process.GetCurrentProcess().MainModule.FileName;
+            var processModule = Process.GetCurrentProcess().MainModule;
+            if (processModule == null) return;
+            var exePath = processModule.FileName;
             autoStartKey.SetValue(appID, exePath);
         }
         //remove autostart key
@@ -43,69 +45,64 @@ namespace XB1ControllerBatteryIndicator
         //check if a newer version is available
         private void CheckForUpdate()
         {
-            bool update_check = Properties.Settings.Default.UpdateCheck;
-            if (update_check == true)
+            var updateCheck = Properties.Settings.Default.UpdateCheck;
+            if (updateCheck != true) return;
+            Version newVersion = null;
+            var updateUrl = "";
+            var reader = new XmlTextReader(xmlUrl);
+            try
             {
-                Version newVersion = null;
-                string update_url = "";
-                XmlTextReader reader;
-                reader = new XmlTextReader(xmlUrl);
-                try
+                reader.MoveToContent();
+                var elementName = "";
+                if (reader.NodeType == XmlNodeType.Element && reader.Name == appID)
                 {
-                    reader.MoveToContent();
-                    string elementName = "";
-                    if ((reader.NodeType == XmlNodeType.Element) && (reader.Name == appID))
+                    while (reader.Read())
                     {
-                        while (reader.Read())
+                        switch (reader.NodeType)
                         {
-                            if (reader.NodeType == XmlNodeType.Element)
+                            case XmlNodeType.Element:
                                 elementName = reader.Name;
-                            else
-                            {
-                                if ((reader.NodeType == XmlNodeType.Text) && (reader.HasValue))
+                                break;
+                            case XmlNodeType.Text when reader.HasValue:
+                                switch (elementName)
                                 {
-                                    switch (elementName)
-                                    {
-                                        case "version":
-                                            newVersion = new Version(reader.Value);
-                                            break;
-                                        case "url":
-                                            update_url = reader.Value;
-                                            break;
-                                    }
+                                    case "version":
+                                        newVersion = new Version(reader.Value);
+                                        break;
+                                    case "url":
+                                        updateUrl = reader.Value;
+                                        break;
                                 }
-                            }
+                                break;
                         }
                     }
                 }
-                catch (Exception)
-                {
-                }
-                finally
-                {
-                    if (reader != null) reader.Close();
-                }
-                if ((newVersion != null) && (update_url != ""))
-                {
-                    Version curVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                    if (curVersion.CompareTo(newVersion) < 0)
-                    {
-                        string title = Strings.NewVersionAvailable_Title;
-                        string question = string.Format(Strings.NewVersionAvailable_Body, appID);
-                        if (MessageBoxResult.Yes == MessageBox.Show(this, question, title, MessageBoxButton.YesNo, MessageBoxImage.Question))
-                        {
-                            System.Diagnostics.Process.Start(update_url);
-                        }
-                    }
-                }
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+            finally
+            {
+                reader.Close();
+            }
+
+            if ((newVersion == null) || (updateUrl == "")) return;
+            var curVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            if (curVersion.CompareTo(newVersion) >= 0) return;
+            var title = Strings.NewVersionAvailable_Title;
+            var question = string.Format(Strings.NewVersionAvailable_Body, appID);
+            if (MessageBoxResult.Yes == MessageBox.Show(this, question, title, MessageBoxButton.YesNo, MessageBoxImage.Question))
+            {
+                System.Diagnostics.Process.Start(updateUrl);
             }
         }
         //autostart-checkbox was clicked
         private void AutoStart_Click(object sender, RoutedEventArgs e)
         {
             //for whatever reason the autostart-Bool always had the reverse value here, so I had to negate it for the check to work...
-            bool autorun_check = !Properties.Settings.Default.AutoStart;
-            if (autorun_check == false)
+            var autorunCheck = !Properties.Settings.Default.AutoStart;
+            if (autorunCheck == false)
             {
                 Properties.Settings.Default.AutoStart = true;
                 Properties.Settings.Default.Save();
@@ -122,8 +119,8 @@ namespace XB1ControllerBatteryIndicator
         private void Update_Click(object sender, RoutedEventArgs e)
         {
             //as with the autostart-bool, this one has to be negated too...
-            bool update_check = !Properties.Settings.Default.UpdateCheck;
-            if (update_check == false)
+            var updateCheck = !Properties.Settings.Default.UpdateCheck;
+            if (updateCheck == false)
             {
                 Properties.Settings.Default.UpdateCheck = true;
                 Properties.Settings.Default.Save();
@@ -140,7 +137,7 @@ namespace XB1ControllerBatteryIndicator
         {
             Debug.WriteLine("LowBatteryWarningSound_Enabled_Click");
 
-            bool lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Enabled;
+            var lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Enabled;
             if (lowBatteryWarningSoundEnabled == false)
             {
                 var openWav = new OpenFileDialog
@@ -175,17 +172,9 @@ namespace XB1ControllerBatteryIndicator
         {
             Debug.WriteLine("LowBatteryWarningSound_Loop_Enabled_Click");
 
-            bool lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled;
-            if (lowBatteryWarningSoundEnabled == false)
-            {
-                Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = true;
-                Properties.Settings.Default.Save();
-            }
-            else
-            {
-                Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = false;
-                Properties.Settings.Default.Save();
-            }
+            var lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled;
+            Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = lowBatteryWarningSoundEnabled == false;
+            Properties.Settings.Default.Save();
         }
         //a language item checkbox was clicked
         private void LanguageItem_OnClick(object sender, RoutedEventArgs e)
