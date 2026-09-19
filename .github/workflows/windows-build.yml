@@ -1,6 +1,9 @@
 name: Windows build
 
 on:
+  push:
+    branches:
+      - best-of-forks
   pull_request:
     branches:
       - master
