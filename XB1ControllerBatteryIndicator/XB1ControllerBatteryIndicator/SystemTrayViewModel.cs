@@ -149,6 +149,16 @@ namespace XB1ControllerBatteryIndicator
 
         private void ProcessControllerAlerts(XboxController controller, int controllerIndex, DateTime nowUtc)
         {
+            // XInput only has meaningful battery levels for wireless battery-backed devices.
+            // Wired controllers and the temporary "battery data not ready" state must never
+            // generate an empty-battery warning.
+            if (controller.BatteryType != BatteryType.Alkaline &&
+                controller.BatteryType != BatteryType.Nimh)
+            {
+                ResetControllerAlertState(controllerIndex, controller.UserIndex);
+                return;
+            }
+
             if (controller.BatteryLevel != BatteryLevel.Empty)
             {
                 if (_toastShown[controllerIndex])
