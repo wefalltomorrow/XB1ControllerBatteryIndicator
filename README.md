@@ -27,9 +27,9 @@ No .NET 10 runtime is required.
 
 - Lightweight system-tray battery indicator
 - Supports up to four XInput controllers
-- Polls all controller slots every second
+- Polls all controller slots every five seconds
 - Rotates the visible controller every five seconds when multiple controllers are connected
-- Empty, low, medium and full battery states
+- Approximate battery ranges: 0–10%, 10–40%, 40–70% and 70–100%
 - Wired and waiting-for-data states
 - Low-battery Windows toast notifications
 - Optional built-in Windows low-battery warning sound and looping warning sound
@@ -37,18 +37,19 @@ No .NET 10 runtime is required.
 - Optional startup with Windows
 - Built-in update checking against this fork
 
-XInput exposes coarse battery levels rather than a precise percentage, so this application intentionally reports **Empty / Low / Medium / Full** rather than inventing a percentage.
+XInput exposes four coarse battery states rather than an exact percentage, so this application shows their approximate charge ranges: **0–10%, 10–40%, 40–70% and 70–100%**.
 
 ## What's improved in this fork
 
-Version 1.3.2.1 consolidates the useful maintenance work from newer forks while preserving the original behaviour:
+Version 1.3.2.2 consolidates the useful maintenance work from newer forks while preserving the original behaviour:
 
 - Removed the abandoned SharpDX and SharpDX.XInput dependencies
 - Calls Windows `xinput1_4.dll` directly through P/Invoke
-- Polls controller state every second without breaking five-second multi-controller display rotation
+- Polls controller state every five seconds, matching the five-second multi-controller display rotation
 - Prevents persistent polling errors from creating a high-CPU retry loop
 - Preserves the connected-but-waiting-for-battery-data state
 - Prevents false low-battery alerts for wired or still-initializing controllers
+- Shows documented approximate percentage ranges instead of vague Empty / Low / Medium / Full labels
 - Tracks low-battery sound state independently for each controller
 - Uses the Windows Exclamation system sound for battery warnings instead of requiring a custom WAV file
 - Caches the Windows theme value instead of reading the registry on every icon refresh
