@@ -22,7 +22,7 @@ namespace XB1ControllerBatteryIndicator
         private const string ThemeRegKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
         private const string ThemeRegValueName = "SystemUsesLightTheme";
         private const int ControllerCount = 4;
-        private const int PollIntervalMs = 1000;
+        private const int PollIntervalMs = 5000;
         private const int DisplayRotationIntervalMs = 5000;
 
         private string _activeIcon;
@@ -255,11 +255,11 @@ namespace XB1ControllerBatteryIndicator
                     break;
 
                 default:
-                    var batteryLevelCaption = GetBatteryLevelCaption(controller.BatteryLevel);
+                    var batteryPercentageRange = GetBatteryPercentageRange(controller.BatteryLevel);
                     TooltipText = string.Format(
                         Strings.ToolTip_Wireless,
                         controllerIndexCaption,
-                        batteryLevelCaption);
+                        batteryPercentageRange);
                     ActiveIcon = "Resources/battery_" +
                                  controller.BatteryLevel.ToString().ToLowerInvariant() +
                                  "_" +
@@ -378,18 +378,20 @@ namespace XB1ControllerBatteryIndicator
             System.Windows.Application.Current.Shutdown();
         }
 
-        private static string GetBatteryLevelCaption(BatteryLevel batteryLevel)
+        private static string GetBatteryPercentageRange(BatteryLevel batteryLevel)
         {
+            // XInput exposes only four coarse battery states, not an exact percentage.
+            // These ranges reflect Microsoft's documented approximate charge bands.
             switch (batteryLevel)
             {
                 case BatteryLevel.Empty:
-                    return Strings.BatteryLevel_Empty;
+                    return "0–10%";
                 case BatteryLevel.Low:
-                    return Strings.BatteryLevel_Low;
+                    return "10–40%";
                 case BatteryLevel.Medium:
-                    return Strings.BatteryLevel_Medium;
+                    return "40–70%";
                 case BatteryLevel.Full:
-                    return Strings.BatteryLevel_Full;
+                    return "70–100%";
                 default:
                     throw new ArgumentOutOfRangeException("batteryLevel", batteryLevel, null);
             }
