@@ -27,7 +27,10 @@ namespace XB1ControllerBatteryIndicator
 
         private string _activeIcon;
         private string _tooltipText;
+        private System.Windows.Visibility _trayIconVisibility = System.Windows.Visibility.Visible;
+        private volatile bool _hasConnectedController;
         private readonly bool[] _toastShown = new bool[ControllerCount];
+        private readonly string[] _lastControllerLogState = new string[ControllerCount];
         private readonly bool[] _lowBatterySoundPlayed = new bool[ControllerCount];
         private readonly DateTime[] _nextLoopSoundUtc = new DateTime[ControllerCount];
         private volatile string _themeSuffix = string.Empty;
@@ -35,6 +38,8 @@ namespace XB1ControllerBatteryIndicator
 
         public SystemTrayViewModel()
         {
+            AppLogger.Info("Application started. Version " +
+                System.Reflection.Assembly.GetExecutingAssembly().GetName().Version);
             GetAvailableLanguages();
             TranslationManager.CurrentLanguageChangedEvent += (sender, args) => GetAvailableLanguages();
             RefreshThemeSuffix();
@@ -62,6 +67,37 @@ namespace XB1ControllerBatteryIndicator
             private set { Set(ref _tooltipText, value); }
         }
 
+        public System.Windows.Visibility TrayIconVisibility
+        {
+            get { return _trayIconVisibility; }
+            private set { Set(ref _trayIconVisibility, value); }
+        }
+
+        public bool IsThemeAuto
+        {
+            get { return Settings.Default.ThemeMode == 0; }
+        }
+
+        public bool IsThemeLight
+        {
+            get { return Settings.Default.ThemeMode == 1; }
+        }
+
+        public bool IsThemeDark
+        {
+            get { return Settings.Default.ThemeMode == 2; }
+        }
+
+        public bool IsWarningThresholdEmpty
+        {
+            get { return Settings.Default.LowBatteryWarningThreshold == 0; }
+        }
+
+        public bool IsWarningThresholdLow
+        {
+            get { return Settings.Default.LowBatteryWarningThreshold == 1; }
+        }
+
         public ObservableCollection<CultureInfo> AvailableLanguages { get; } = new ObservableCollection<CultureInfo>();
 
         private void RefreshControllerState()
@@ -87,6 +123,7 @@ namespace XB1ControllerBatteryIndicator
                     for (var i = 0; i < controllers.Length; i++)
                     {
                         var controller = controllers[i];
+                        LogControllerState(i, controller);
 
                         if (!controller.IsConnected)
                         {
@@ -97,6 +134,9 @@ namespace XB1ControllerBatteryIndicator
                         anyConnected = true;
                         ProcessControllerAlerts(controller, i, nowUtc);
                     }
+
+                    _hasConnectedController = anyConnected;
+                    ApplyTrayVisibility();
 
                     if (!anyConnected)
                     {
@@ -125,6 +165,7 @@ namespace XB1ControllerBatteryIndicator
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex);
+                    AppLogger.Error("Controller polling failed.", ex);
                 }
 
                 // Always throttle the polling loop, including after exceptions.
@@ -156,7 +197,11 @@ namespace XB1ControllerBatteryIndicator
                 return;
             }
 
-            if (controller.BatteryLevel != BatteryLevel.Empty)
+            var warningThreshold = Settings.Default.LowBatteryWarningThreshold == 1
+                ? BatteryLevel.Low
+                : BatteryLevel.Empty;
+
+            if ((byte)controller.BatteryLevel > (byte)warningThreshold)
             {
                 if (_toastShown[controllerIndex])
                 {
@@ -175,7 +220,7 @@ namespace XB1ControllerBatteryIndicator
             if (!_toastShown[controllerIndex])
             {
                 _toastShown[controllerIndex] = true;
-                ShowToast(controller.UserIndex);
+                ShowToast(controller.UserIndex, controller.BatteryLevel);
             }
 
             if (!Settings.Default.LowBatteryWarningSound_Enabled)
@@ -211,6 +256,7 @@ namespace XB1ControllerBatteryIndicator
                 catch (Exception ex)
                 {
                     Debug.WriteLine(ex);
+                    AppLogger.Error("Failed to remove low-battery toast.", ex);
                 }
             }
 
@@ -228,6 +274,7 @@ namespace XB1ControllerBatteryIndicator
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
+                AppLogger.Error("Failed to play low-battery system sound.", ex);
             }
         }
 
@@ -303,18 +350,22 @@ namespace XB1ControllerBatteryIndicator
             ErrorHelper.VerifySucceeded(newShortcutSave.Save(shortcutPath, true));
         }
 
-        private void ShowToast(UserIndex controllerIndex)
+        private void ShowToast(UserIndex controllerIndex, BatteryLevel batteryLevel)
         {
             var controllerId = (int)controllerIndex;
             var controllerIndexCaption = GetControllerIndexCaption(controllerIndex);
             var argsDismiss = "dismissed";
             var argsLaunch = controllerId.ToString(CultureInfo.InvariantCulture);
 
+            var warningText = batteryLevel == BatteryLevel.Low
+                ? Strings.Toast_Text_Low
+                : Strings.Toast_Text;
+
             var toastVisual =
                 @"<visual>
                     <binding template='ToastGeneric'>
                         <text>" + string.Format(Strings.Toast_Title, controllerIndexCaption) + @"</text>
-                        <text>" + string.Format(Strings.Toast_Text, controllerIndexCaption) + @"</text>
+                        <text>" + string.Format(warningText, controllerIndexCaption) + @"</text>
                         <text>" + Strings.Toast_Text2 + @"</text>
                     </binding>
                   </visual>";
@@ -362,6 +413,7 @@ namespace XB1ControllerBatteryIndicator
 
         public void ExitApplication()
         {
+            AppLogger.Info("Application exiting.");
             if (_themeWatcher != null)
             {
                 try
@@ -437,12 +489,17 @@ namespace XB1ControllerBatteryIndicator
             try
             {
                 _themeWatcher = new ManagementEventWatcher(query);
-                _themeWatcher.EventArrived += (sender, args) => RefreshThemeSuffix();
+                _themeWatcher.EventArrived += (sender, args) =>
+                {
+                    if (Settings.Default.ThemeMode == 0)
+                        RefreshThemeSuffix();
+                };
                 _themeWatcher.Start();
             }
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
+                AppLogger.Error("Windows theme watcher failed.", ex);
                 if (_themeWatcher != null)
                 {
                     _themeWatcher.Dispose();
@@ -455,6 +512,18 @@ namespace XB1ControllerBatteryIndicator
 
         private void RefreshThemeSuffix()
         {
+            if (Settings.Default.ThemeMode == 1)
+            {
+                _themeSuffix = "-black";
+                return;
+            }
+
+            if (Settings.Default.ThemeMode == 2)
+            {
+                _themeSuffix = string.Empty;
+                return;
+            }
+
             try
             {
                 using (var key = Registry.CurrentUser.OpenSubKey(ThemeRegKeyPath))
@@ -473,8 +542,87 @@ namespace XB1ControllerBatteryIndicator
             catch (Exception ex)
             {
                 Debug.WriteLine(ex);
+                AppLogger.Error("Failed to read Windows tray theme.", ex);
                 _themeSuffix = string.Empty;
             }
+        }
+
+        public void SetThemeMode(int mode)
+        {
+            if (mode < 0 || mode > 2)
+                mode = 0;
+
+            Settings.Default.ThemeMode = mode;
+            Settings.Default.Save();
+            NotifyOfPropertyChange("IsThemeAuto");
+            NotifyOfPropertyChange("IsThemeLight");
+            NotifyOfPropertyChange("IsThemeDark");
+
+            RefreshThemeSuffix();
+            RethemeCurrentIcon();
+            AppLogger.Info("Theme mode changed to " + mode + ".");
+        }
+
+        public void SetWarningThreshold(int threshold)
+        {
+            Settings.Default.LowBatteryWarningThreshold = threshold == 1 ? 1 : 0;
+            Settings.Default.Save();
+            NotifyOfPropertyChange("IsWarningThresholdEmpty");
+            NotifyOfPropertyChange("IsWarningThresholdLow");
+            AppLogger.Info("Low-battery warning threshold changed to " +
+                (Settings.Default.LowBatteryWarningThreshold == 1 ? "Low (10-40%)." : "Empty (0-10%)."));
+        }
+
+        public void SetHideWhenDisconnected(bool hide)
+        {
+            Settings.Default.HideWhenDisconnected = hide;
+            Settings.Default.Save();
+            ApplyTrayVisibility();
+            AppLogger.Info("Hide when disconnected " + (hide ? "enabled." : "disabled."));
+        }
+
+        public void OpenDiagnosticsFolder()
+        {
+            try
+            {
+                AppLogger.EnsureLogDirectory();
+                Process.Start(new ProcessStartInfo(AppLogger.LogDirectory) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Failed to open diagnostics folder.", ex);
+            }
+        }
+
+        private void ApplyTrayVisibility()
+        {
+            TrayIconVisibility = Settings.Default.HideWhenDisconnected && !_hasConnectedController
+                ? System.Windows.Visibility.Hidden
+                : System.Windows.Visibility.Visible;
+        }
+
+        private void RethemeCurrentIcon()
+        {
+            if (string.IsNullOrEmpty(ActiveIcon))
+                return;
+
+            var baseIcon = ActiveIcon.Replace("-black.ico", ".ico");
+            ActiveIcon = _themeSuffix == "-black" && baseIcon.EndsWith(".ico", StringComparison.OrdinalIgnoreCase)
+                ? baseIcon.Substring(0, baseIcon.Length - 4) + "-black.ico"
+                : baseIcon;
+        }
+
+        private void LogControllerState(int controllerIndex, XboxController controller)
+        {
+            var state = !controller.IsConnected
+                ? "Disconnected"
+                : controller.BatteryType + " / " + controller.BatteryLevel;
+
+            if (string.Equals(_lastControllerLogState[controllerIndex], state, StringComparison.Ordinal))
+                return;
+
+            _lastControllerLogState[controllerIndex] = state;
+            AppLogger.Info("Controller " + (controllerIndex + 1) + ": " + state);
         }
     }
 }
