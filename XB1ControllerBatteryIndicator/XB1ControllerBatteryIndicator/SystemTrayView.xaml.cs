@@ -1,168 +1,266 @@
-﻿using System.Windows;
-using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
-using System.Xml;
+using System.Xml.Linq;
+using Microsoft.Win32;
 using XB1ControllerBatteryIndicator.Localization;
 
 namespace XB1ControllerBatteryIndicator
 {
     /// <summary>
-    ///     Interaction logic for SystemTrayView.xaml
+    /// Interaction logic for SystemTrayView.xaml.
     /// </summary>
     public partial class SystemTrayView : Window
     {
-        private SystemTrayViewModel ViewModel => DataContext as SystemTrayViewModel;
+        private const string AppId = "XB1ControllerBatteryIndicator";
+        private const string VersionFeedUrl =
+            "https://raw.githubusercontent.com/wefalltomorrow/XB1ControllerBatteryIndicator/master/current_version.xml";
+        private const string AutoStartRegistryPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        private SystemTrayViewModel ViewModel
+        {
+            get { return DataContext as SystemTrayViewModel; }
+        }
 
         public SystemTrayView()
         {
             InitializeComponent();
-            CheckForUpdate();
-            this.ShowInTaskbar = false;
+            ShowInTaskbar = false;
 
             var language = new CultureInfo(Properties.Settings.Default.Language);
             TranslationManager.CurrentLanguage = language;
-        }
-        RegistryKey autoStartKey = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
-        private string appID = "XB1ControllerBatteryIndicator";
-        string xmlUrl = "https://raw.githubusercontent.com/wefalltomorrow/XB1ControllerBatteryIndicator/master/current_version.xml";
 
-        //create autostart registry key
+            if (Properties.Settings.Default.UpdateCheck)
+                CheckForUpdateAsync(false);
+        }
+
         private void StartWithWindows()
         {
-            String exePath = Process.GetCurrentProcess().MainModule.FileName;
-            autoStartKey.SetValue(appID, exePath);
+            var exePath = Process.GetCurrentProcess().MainModule.FileName;
+
+            using (var key = Registry.CurrentUser.CreateSubKey(AutoStartRegistryPath))
+            {
+                if (key == null)
+                    throw new InvalidOperationException("Unable to open the Windows startup registry key.");
+
+                // Quote the path so installations under folders containing spaces work correctly.
+                key.SetValue(AppId, """ + exePath + """);
+            }
         }
-        //remove autostart key
+
         private void RemoveAutoStart()
         {
-            autoStartKey.DeleteValue(appID, false);
+            using (var key = Registry.CurrentUser.OpenSubKey(AutoStartRegistryPath, true))
+            {
+                if (key != null)
+                    key.DeleteValue(AppId, false);
+            }
         }
-        //check if a newer version is available
-        private void CheckForUpdate()
+
+        private async Task CheckForUpdateAsync(bool manual)
         {
-            bool update_check = Properties.Settings.Default.UpdateCheck;
-            if (update_check == true)
+            if (!manual && !Properties.Settings.Default.UpdateCheck)
+                return;
+
+            try
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                Version newVersion = null;
-                string update_url = "";
-                XmlTextReader reader;
-                reader = new XmlTextReader(xmlUrl);
-                try
+
+                string xml;
+                using (var client = new HttpClient())
                 {
-                    reader.MoveToContent();
-                    string elementName = "";
-                    if ((reader.NodeType == XmlNodeType.Element) && (reader.Name == appID))
+                    client.Timeout = TimeSpan.FromSeconds(5);
+                    xml = await client.GetStringAsync(VersionFeedUrl);
+                }
+
+                var document = XDocument.Parse(xml);
+                var root = document.Root;
+                if (root == null || !string.Equals(root.Name.LocalName, AppId, StringComparison.Ordinal))
+                    throw new InvalidOperationException("The update feed has an unexpected format.");
+
+                var versionElement = root.Element("version");
+                var urlElement = root.Element("url");
+
+                Version newVersion;
+                if (versionElement == null ||
+                    !Version.TryParse(versionElement.Value, out newVersion) ||
+                    urlElement == null ||
+                    string.IsNullOrWhiteSpace(urlElement.Value))
+                {
+                    throw new InvalidOperationException("The update feed is missing required values.");
+                }
+
+                var currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                if (currentVersion.CompareTo(newVersion) >= 0)
+                {
+                    if (manual)
                     {
-                        while (reader.Read())
-                        {
-                            if (reader.NodeType == XmlNodeType.Element)
-                                elementName = reader.Name;
-                            else
-                            {
-                                if ((reader.NodeType == XmlNodeType.Text) && (reader.HasValue))
-                                {
-                                    switch (elementName)
-                                    {
-                                        case "version":
-                                            newVersion = new Version(reader.Value);
-                                            break;
-                                        case "url":
-                                            update_url = reader.Value;
-                                            break;
-                                    }
-                                }
-                            }
-                        }
+                        MessageBox.Show(
+                            this,
+                            Strings.UpdateCheck_UpToDate_Body,
+                            Strings.UpdateCheck_UpToDate_Title,
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Information);
                     }
+
+                    return;
                 }
-                catch (Exception)
+
+                var newVersionText = newVersion.ToString();
+                if (!manual &&
+                    string.Equals(
+                        Properties.Settings.Default.LastDismissedUpdateVersion,
+                        newVersionText,
+                        StringComparison.OrdinalIgnoreCase))
                 {
+                    AppLogger.Info("Update " + newVersionText + " is available but was previously dismissed.");
+                    return;
                 }
-                finally
+
+                AppLogger.Info("Update available: " + currentVersion + " -> " + newVersionText);
+
+                var result = MessageBox.Show(
+                    this,
+                    string.Format(Strings.NewVersionAvailable_Body, AppId),
+                    Strings.NewVersionAvailable_Title,
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result == MessageBoxResult.Yes)
                 {
-                    if (reader != null) reader.Close();
-                }
-                if ((newVersion != null) && (update_url != ""))
-                {
-                    Version curVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                    if (curVersion.CompareTo(newVersion) < 0)
+                    Properties.Settings.Default.LastDismissedUpdateVersion = string.Empty;
+                    Properties.Settings.Default.Save();
+
+                    Process.Start(new ProcessStartInfo(urlElement.Value)
                     {
-                        string title = Strings.NewVersionAvailable_Title;
-                        string question = string.Format(Strings.NewVersionAvailable_Body, appID);
-                        if (MessageBoxResult.Yes == MessageBox.Show(this, question, title, MessageBoxButton.YesNo, MessageBoxImage.Question))
-                        {
-                            System.Diagnostics.Process.Start(update_url);
-                        }
-                    }
+                        UseShellExecute = true
+                    });
+                }
+                else
+                {
+                    Properties.Settings.Default.LastDismissedUpdateVersion = newVersionText;
+                    Properties.Settings.Default.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error("Update check failed.", ex);
+
+                if (manual)
+                {
+                    MessageBox.Show(
+                        this,
+                        Strings.UpdateCheck_Failed_Body,
+                        Strings.UpdateCheck_Failed_Title,
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                 }
             }
         }
-        //autostart-checkbox was clicked
+
         private void AutoStart_Click(object sender, RoutedEventArgs e)
         {
-            //for whatever reason the autostart-Bool always had the reverse value here, so I had to negate it for the check to work...
-            bool autorun_check = !Properties.Settings.Default.AutoStart;
-            if (autorun_check == false)
+            var item = sender as MenuItem;
+            if (item == null)
+                return;
+
+            Properties.Settings.Default.AutoStart = item.IsChecked;
+            Properties.Settings.Default.Save();
+
+            try
             {
-                Properties.Settings.Default.AutoStart = true;
-                Properties.Settings.Default.Save();
-                this.StartWithWindows();
+                if (item.IsChecked)
+                    StartWithWindows();
+                else
+                    RemoveAutoStart();
+
+                AppLogger.Info("Start with Windows " + (item.IsChecked ? "enabled." : "disabled."));
             }
-            else
+            catch (Exception ex)
             {
-                Properties.Settings.Default.AutoStart = false;
-                Properties.Settings.Default.Save();
-                this.RemoveAutoStart();
+                AppLogger.Error("Failed to change Start with Windows setting.", ex);
             }
         }
-        //update-checkbox was clicked
-        private void Update_Click(object sender, RoutedEventArgs e)
+
+        private async void Update_Click(object sender, RoutedEventArgs e)
         {
-            //as with the autostart-bool, this one has to be negated too...
-            bool update_check = !Properties.Settings.Default.UpdateCheck;
-            if (update_check == false)
+            var item = sender as MenuItem;
+            if (item == null)
+                return;
+
+            Properties.Settings.Default.UpdateCheck = item.IsChecked;
+            Properties.Settings.Default.Save();
+
+            if (item.IsChecked)
+                await CheckForUpdateAsync(false);
+        }
+
+        private async void CheckNow_Click(object sender, RoutedEventArgs e)
+        {
+            await CheckForUpdateAsync(true);
+        }
+
+        private void HideWhenDisconnected_Click(object sender, RoutedEventArgs e)
+        {
+            var item = sender as MenuItem;
+            if (item != null && ViewModel != null)
+                ViewModel.SetHideWhenDisconnected(item.IsChecked);
+        }
+
+        private void ThemeMode_Click(object sender, RoutedEventArgs e)
+        {
+            var item = sender as MenuItem;
+            int mode;
+
+            if (item != null &&
+                item.Tag != null &&
+                int.TryParse(item.Tag.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out mode) &&
+                ViewModel != null)
             {
-                Properties.Settings.Default.UpdateCheck = true;
-                Properties.Settings.Default.Save();
-                this.CheckForUpdate();
-            }
-            else
-            {
-                Properties.Settings.Default.UpdateCheck = false;
-                Properties.Settings.Default.Save();
+                ViewModel.SetThemeMode(mode);
             }
         }
-        //lowBatteryWarningSound_Enabled-checkbox was clicked
+
+        private void WarningThreshold_Click(object sender, RoutedEventArgs e)
+        {
+            var item = sender as MenuItem;
+            int threshold;
+
+            if (item != null &&
+                item.Tag != null &&
+                int.TryParse(item.Tag.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out threshold) &&
+                ViewModel != null)
+            {
+                ViewModel.SetWarningThreshold(threshold);
+            }
+        }
+
         private void LowBatteryWarningSound_Enabled_Click(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine("LowBatteryWarningSound_Enabled_Click");
+            var item = sender as MenuItem;
+            if (item == null)
+                return;
 
-            // IsChecked is already two-way bound to the setting; just persist it.
+            Properties.Settings.Default.LowBatteryWarningSound_Enabled = item.IsChecked;
             Properties.Settings.Default.Save();
         }
-        //lowBatteryWarningSound_Loop_Enabled-checkbox was clicked
+
         private void LowBatteryWarningSound_Loop_Enabled_Click(object sender, RoutedEventArgs e)
         {
-            Debug.WriteLine("LowBatteryWarningSound_Loop_Enabled_Click");
+            var item = sender as MenuItem;
+            if (item == null)
+                return;
 
-            bool lowBatteryWarningSoundEnabled = !Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled;
-            if (lowBatteryWarningSoundEnabled == false)
-            {
-                Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = true;
-                Properties.Settings.Default.Save();
-            }
-            else
-            {
-                Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = false;
-                Properties.Settings.Default.Save();
-            }
+            Properties.Settings.Default.LowBatteryWarningSound_Loop_Enabled = item.IsChecked;
+            Properties.Settings.Default.Save();
         }
-        //a language item checkbox was clicked
+
         private void LanguageItem_OnClick(object sender, RoutedEventArgs e)
         {
             var selectedLanguage = (CultureInfo)((FrameworkElement)e.OriginalSource).DataContext;
@@ -172,7 +270,8 @@ namespace XB1ControllerBatteryIndicator
             Properties.Settings.Default.Save();
         }
     }
-    //this enabled using the values stored in the settings file to be used in XAML
+
+    // Enables values stored in Settings to be used directly in XAML bindings.
     public class SettingBindingExtension : Binding
     {
         public SettingBindingExtension()
@@ -188,8 +287,8 @@ namespace XB1ControllerBatteryIndicator
 
         private void Initialize()
         {
-            this.Source = Properties.Settings.Default;
-            this.Mode = BindingMode.TwoWay;
+            Source = Properties.Settings.Default;
+            Mode = BindingMode.TwoWay;
         }
     }
 }
