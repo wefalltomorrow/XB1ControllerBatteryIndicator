@@ -82,5 +82,53 @@ namespace XB1ControllerBatteryIndicator.Properties {
                 this["LowBatteryWarningSound_Loop_Enabled"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool HideWhenDisconnected {
+            get {
+                return ((bool)(this["HideWhenDisconnected"]));
+            }
+            set {
+                this["HideWhenDisconnected"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int ThemeMode {
+            get {
+                return ((int)(this["ThemeMode"]));
+            }
+            set {
+                this["ThemeMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int LowBatteryWarningThreshold {
+            get {
+                return ((int)(this["LowBatteryWarningThreshold"]));
+            }
+            set {
+                this["LowBatteryWarningThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastDismissedUpdateVersion {
+            get {
+                return ((string)(this["LastDismissedUpdateVersion"]));
+            }
+            set {
+                this["LastDismissedUpdateVersion"] = value;
+            }
+        }
     }
 }
