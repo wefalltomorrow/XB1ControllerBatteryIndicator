@@ -34,8 +34,10 @@ No .NET 10 runtime is required.
 - Low-battery Windows toast notifications with a configurable **Low (10–40%)** or **Empty (0–10%)** threshold
 - Optional built-in Windows low-battery warning sound and looping warning sound
 - Auto / Light / Dark tray theme modes, with live Windows theme tracking in Auto mode
-- Optional auto-hide when no controller is connected\n- Optional startup with Windows
-- Non-blocking update checking with a 5-second network timeout, manual Check now option, and dismissed-version memory\n- Lightweight rotating diagnostics log under `%LOCALAPPDATA%\\XB1ControllerBatteryIndicator`
+- Optional auto-hide when no controller is connected
+- Optional startup with Windows
+- Non-blocking update checking with a 5-second network timeout, manual Check now option, and dismissed-version memory
+- Lightweight rotating diagnostics log under `%LOCALAPPDATA%\\XB1ControllerBatteryIndicator`
 
 XInput exposes four coarse battery states rather than an exact percentage, so this application shows their approximate charge ranges: **0–10%, 10–40%, 40–70% and 70–100%**.
 
@@ -51,7 +53,12 @@ Version 1.3.3.0 consolidates the useful maintenance work from newer forks while 
 - Prevents false low-battery alerts for wired or still-initializing controllers
 - Shows documented approximate percentage ranges instead of vague Empty / Low / Medium / Full labels
 - Tracks low-battery sound state independently for each controller
-- Uses the Windows Exclamation system sound for battery warnings instead of requiring a custom WAV file\n- Lets you choose whether warnings begin at Low (10–40%) or only at Empty (0–10%)\n- Can hide the tray icon while no controller is connected\n- Adds Auto / Light / Dark theme override without losing live theme detection in Auto mode\n- Adds a 1 MB rotating diagnostics log that records state changes and errors only\n- Moves update checks off the startup path and remembers a dismissed release so it does not nag every launch
+- Uses the Windows Exclamation system sound for battery warnings instead of requiring a custom WAV file
+- Lets you choose whether warnings begin at Low (10–40%) or only at Empty (0–10%)
+- Can hide the tray icon while no controller is connected
+- Adds Auto / Light / Dark theme override without losing live theme detection in Auto mode
+- Adds a 1 MB rotating diagnostics log that records state changes and errors only
+- Moves update checks off the startup path and remembers a dismissed release so it does not nag every launch
 - Caches the Windows theme value instead of reading the registry on every icon refresh
 - Keeps the theme watcher alive for reliable theme changes
 - Removes redundant translation-resource rescans
