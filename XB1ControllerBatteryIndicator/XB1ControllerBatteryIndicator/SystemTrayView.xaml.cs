@@ -50,7 +50,7 @@ namespace XB1ControllerBatteryIndicator
                     throw new InvalidOperationException("Unable to open the Windows startup registry key.");
 
                 // Quote the path so installations under folders containing spaces work correctly.
-                key.SetValue(AppId, """ + exePath + """);
+                key.SetValue(AppId, "\\\"" + exePath + "\\\"");
             }
         }
 
