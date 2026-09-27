@@ -121,7 +121,7 @@
     <value>New version available</value>
   </data>
   <data name="NewVersionAvailable_Body" xml:space="preserve">
-    <value>A new version of {0} is available. Do you want to open the Homepage?</value>
+    <value>A new version of {0} is available. Do you want to open the release page?</value>
   </data>
   <data name="ContextMenu_AutoStart" xml:space="preserve">
     <value>Start with Windows</value>
@@ -157,7 +157,7 @@
     <value>(Click on the Button to stop the reappearing of this warning.)</value>
   </data>
   <data name="Toast_Dismiss" xml:space="preserve">
-    <value>Shut up!</value>
+    <value>Dismiss</value>
   </data>
   <data name="BatteryLevel_Empty" xml:space="preserve">
     <value>Empty</value>
@@ -194,5 +194,56 @@
   </data>
   <data name="ContextMenu_LowBatteryWarningSound_Loop_Enabled" xml:space="preserve">
     <value>Repeat on loop</value>
+  </data>
+  <data name="ContextMenu_CheckNow" xml:space="preserve">
+    <value>Check for updates now</value>
+  </data>
+  <data name="ContextMenu_HideWhenDisconnected" xml:space="preserve">
+    <value>Hide when no controller is connected</value>
+  </data>
+  <data name="ContextMenu_Theme" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="ContextMenu_Theme_Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="ContextMenu_Theme_Light" xml:space="preserve">
+    <value>Light</value>
+  </data>
+  <data name="ContextMenu_Theme_Dark" xml:space="preserve">
+    <value>Dark</value>
+  </data>
+  <data name="ContextMenu_BatteryWarning" xml:space="preserve">
+    <value>Battery warning</value>
+  </data>
+  <data name="ContextMenu_WarningThreshold" xml:space="preserve">
+    <value>Warning threshold</value>
+  </data>
+  <data name="ContextMenu_WarningThreshold_Empty" xml:space="preserve">
+    <value>Empty (0–10%)</value>
+  </data>
+  <data name="ContextMenu_WarningThreshold_Low" xml:space="preserve">
+    <value>Low (10–40%)</value>
+  </data>
+  <data name="ContextMenu_Diagnostics" xml:space="preserve">
+    <value>Diagnostics</value>
+  </data>
+  <data name="ContextMenu_OpenLogFolder" xml:space="preserve">
+    <value>Open log folder</value>
+  </data>
+  <data name="UpdateCheck_UpToDate_Title" xml:space="preserve">
+    <value>No update available</value>
+  </data>
+  <data name="UpdateCheck_UpToDate_Body" xml:space="preserve">
+    <value>You are running the latest version.</value>
+  </data>
+  <data name="UpdateCheck_Failed_Title" xml:space="preserve">
+    <value>Update check failed</value>
+  </data>
+  <data name="UpdateCheck_Failed_Body" xml:space="preserve">
+    <value>Unable to check for updates right now. Please try again later.</value>
+  </data>
+  <data name="Toast_Text_Low" xml:space="preserve">
+    <value>Battery of controller {0} is low.</value>
   </data>
 </root>

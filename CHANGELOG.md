@@ -2,6 +2,32 @@
 
 All notable changes to this maintained fork are documented here.
 
+## [1.3.3.0] - 2026-09-27
+
+### Added
+
+- Configurable battery warning threshold: Low (10–40%) or Empty (0–10%)
+- Optional tray auto-hide when no controller is connected
+- Auto / Light / Dark tray theme modes
+- Manual "Check for updates now" command
+- Lightweight rotating diagnostics log under `%LOCALAPPDATA%\XB1ControllerBatteryIndicator`
+- Diagnostics menu command to open the log folder
+
+### Changed
+
+- Update checks are now asynchronous and no longer block application startup
+- Update network requests now time out after 5 seconds
+- Dismissing an available version suppresses repeated prompts for that same version
+- Start-with-Windows entries now quote executable paths correctly
+- Tray checkbox handlers now use their actual checked state instead of the inherited inverted-setting workaround
+- Low-battery toasts use a dedicated message when the warning begins at the Low state
+- Default English dismiss button text changed from "Shut up!" to "Dismiss"
+
+### Optimized
+
+- Diagnostics log records only controller state transitions and errors rather than every 5-second poll
+- Log rotation is capped at 1 MB with one previous log retained
+
 ## [1.3.2.2] - 2026-09-20
 
 ### Changed

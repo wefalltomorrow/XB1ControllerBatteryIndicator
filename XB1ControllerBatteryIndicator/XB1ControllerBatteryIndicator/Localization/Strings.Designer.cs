@@ -293,5 +293,74 @@ namespace XB1ControllerBatteryIndicator.Localization {
                 return ResourceManager.GetString("ToolTip_Wireless", resourceCulture);
             }
         }
+
+        public static string ContextMenu_CheckNow {
+            get { return ResourceManager.GetString("ContextMenu_CheckNow", resourceCulture); }
+        }
+
+        public static string ContextMenu_HideWhenDisconnected {
+            get { return ResourceManager.GetString("ContextMenu_HideWhenDisconnected", resourceCulture); }
+        }
+
+        public static string ContextMenu_Theme {
+            get { return ResourceManager.GetString("ContextMenu_Theme", resourceCulture); }
+        }
+
+        public static string ContextMenu_Theme_Auto {
+            get { return ResourceManager.GetString("ContextMenu_Theme_Auto", resourceCulture); }
+        }
+
+        public static string ContextMenu_Theme_Light {
+            get { return ResourceManager.GetString("ContextMenu_Theme_Light", resourceCulture); }
+        }
+
+        public static string ContextMenu_Theme_Dark {
+            get { return ResourceManager.GetString("ContextMenu_Theme_Dark", resourceCulture); }
+        }
+
+        public static string ContextMenu_BatteryWarning {
+            get { return ResourceManager.GetString("ContextMenu_BatteryWarning", resourceCulture); }
+        }
+
+        public static string ContextMenu_WarningThreshold {
+            get { return ResourceManager.GetString("ContextMenu_WarningThreshold", resourceCulture); }
+        }
+
+        public static string ContextMenu_WarningThreshold_Empty {
+            get { return ResourceManager.GetString("ContextMenu_WarningThreshold_Empty", resourceCulture); }
+        }
+
+        public static string ContextMenu_WarningThreshold_Low {
+            get { return ResourceManager.GetString("ContextMenu_WarningThreshold_Low", resourceCulture); }
+        }
+
+        public static string ContextMenu_Diagnostics {
+            get { return ResourceManager.GetString("ContextMenu_Diagnostics", resourceCulture); }
+        }
+
+        public static string ContextMenu_OpenLogFolder {
+            get { return ResourceManager.GetString("ContextMenu_OpenLogFolder", resourceCulture); }
+        }
+
+        public static string UpdateCheck_UpToDate_Title {
+            get { return ResourceManager.GetString("UpdateCheck_UpToDate_Title", resourceCulture); }
+        }
+
+        public static string UpdateCheck_UpToDate_Body {
+            get { return ResourceManager.GetString("UpdateCheck_UpToDate_Body", resourceCulture); }
+        }
+
+        public static string UpdateCheck_Failed_Title {
+            get { return ResourceManager.GetString("UpdateCheck_Failed_Title", resourceCulture); }
+        }
+
+        public static string UpdateCheck_Failed_Body {
+            get { return ResourceManager.GetString("UpdateCheck_Failed_Body", resourceCulture); }
+        }
+
+        public static string Toast_Text_Low {
+            get { return ResourceManager.GetString("Toast_Text_Low", resourceCulture); }
+        }
+
     }
 }
